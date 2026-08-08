@@ -1,0 +1,32 @@
+{
+  "name": "ai-native-docs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "server:dev": "node server.js",
+    "client:dev": "vite",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "build": "vite build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0",
+    "cors": "^2.8.5",
+    "express": "^4.22.2",
+    "multer": "^2.2.0",
+    "quill": "^2.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-quill": "^2.0.0",
+    "sql.js": "^1.10.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^9.0.1",
+    "jest": "^29.6.1",
+    "nodemon": "^2.0.22",
+    "supertest": "^6.3.3",
+    "vite": "^5.4.10"
+  }
+}

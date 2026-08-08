@@ -1,0 +1,87 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #07111f;
+  color: #f7f9fc;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: linear-gradient(135deg, #07111f, #16253c); min-height: 100vh; }
+button, input, select { font: inherit; }
+
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar { width: 320px; background: rgba(6, 14, 29, 0.9); padding: 20px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 12px; }
+/* Mobile drawer initial hidden state handled at small widths */
+.brand { font-size: 1.35rem; font-weight: 700; margin-bottom: 8px; }
+.field { display: flex; flex-direction: column; gap: 6px; color: #b7c4d8; }
+.field select, .title-input, .editor-controls select, .upload-block input { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #111b2d; color: white; }
+.section-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7d8ca8; margin-top: 2px; }
+.doc-list { display: flex; flex-direction: column; gap: 8px; }
+.doc-card { text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: #131f33; color: white; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+.doc-card.shared { border-color: #5a7eeb; }
+.doc-card:hover { transform: translateY(-1px); }
+.primary-btn, .secondary-btn, .tool-btn { border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+.primary-btn { background: linear-gradient(135deg, #5588ff, #2557d6); color: white; }
+.secondary-btn, .tool-btn { background: #243554; color: white; }
+.primary-btn:disabled { opacity: 0.65; cursor: wait; }
+.tool-btn.active { background: #3d6be6; }
+.editor-pane { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.toolbar, .editor-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.toolbar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.toolbar::-webkit-scrollbar { display: none; }
+.title-input { max-width: 320px; }
+.header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; flex-wrap: wrap; }
+.header-row-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.header-title { flex: 1 1 320px; min-width: 160px; max-width: 60%; }
+.action-buttons-inline { display: flex; gap: 8px; align-items: center; }
+.header-row-right { display: flex; align-items: center; gap: 10px; }
+.current-user { color: #dfe8ff; background: transparent; padding: 6px 8px; border-radius: 6px; }
+.inline-share { display: flex; gap: 8px; align-items: center; }
+.share-user-select, .share-perm-select { padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #111b2d; color: white; }
+
+/* Responsive adjustments */
+@media (max-width: 780px) {
+  .header-title { max-width: 100%; }
+  .header-row-left { flex: 1 1 100%; }
+  .header-row-right { flex: 1 1 100%; justify-content: flex-start; gap: 8px; margin-top: 8px; }
+}
+
+@media (max-width: 420px) {
+  .current-user { display: none; }
+  .share-perm-select { display: none; }
+}
+.feedback { padding: 10px 12px; border-radius: 8px; background: #1d2740; color: #dfe8ff; }
+.feedback.success { background: #163c2b; color: #bdf2cb; }
+.feedback.error { background: #3e1c24; color: #ffc9d2; }
+.feedback.info { background: #1d2740; color: #dfe8ff; }
+.quill-editor { background: white; color: black; border-radius: 12px; overflow: hidden; flex: 1; }
+.empty-state { color: #8d9bb6; font-size: 0.95rem; }
+.user-pill { margin-top: auto; padding: 10px; border-radius: 10px; background: #111b2d; color: #dfe8ff; }
+.upload-block { padding: 10px; border: 1px dashed rgba(255,255,255,0.15); border-radius: 10px; }
+.upload-block p { color: #8d9bb6; font-size: 0.95rem; }
+/* Make the OPEN DOCUMENT dropdown match the Logged in as style */
+.doc-select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #111b2d; color: white; }
+
+/* Sidebar toggle button for mobile */
+.sidebar-toggle { display: inline-flex; background: transparent; border: 1px solid rgba(255,255,255,0.06); color: #dfe8ff; padding: 6px 8px; border-radius: 8px; cursor: pointer; transition: transform 160ms ease, background 160ms ease; align-items: center; justify-content: center; margin-right: 8px; }
+
+/* mobile overlay */
+.mobile-overlay { display: none; }
+
+/* Touch target and mobile drawer adjustments */
+@media (max-width: 780px) {
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-110%); width: 85%; max-width: 360px; z-index: 60; box-shadow: 8px 0 30px rgba(0,0,0,0.6); transition: transform 220ms ease-in-out; }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .mobile-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; opacity: 0; pointer-events: none; transition: opacity 200ms ease-in-out; }
+  .mobile-overlay.active { opacity: 1; pointer-events: auto; }
+  /* When sidebar open, push editor to background and show overlay */
+  .sidebar.open + .mobile-overlay.active { display: block; }
+
+  /* Increase touch sizes */
+  .primary-btn, .secondary-btn, .tool-btn { padding: 12px 14px; min-height: 44px; }
+  select, .title-input { padding: 10px 12px; }
+}
+
+/* Utility class to set sidebar open from JS by adding class on element */
+.sidebar.open { transform: translateX(0); }
