@@ -4,8 +4,9 @@ const path = require('path');
 const initSqlJs = require('sql.js');
 
 const DB_PATH = path.join(process.cwd(), 'data.db');
-const USE_POSTGRES = Boolean(process.env.DATABASE_URL || process.env.VERCEL_POSTGRES_URL || process.env.POSTGRES_URL);
-const pgClient = createClient();
+const POSTGRES_CONNECTION_STRING = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.VERCEL_POSTGRES_URL;
+const USE_POSTGRES = Boolean(POSTGRES_CONNECTION_STRING);
+const pgClient = createClient({ connectionString: POSTGRES_CONNECTION_STRING });
 let sqliteDb;
 let sqliteInitPromise;
 let postgresInitPromise;
