@@ -1,10 +1,11 @@
-const { sql } = require('@vercel/postgres');
+const { createClient } = require('@vercel/postgres');
 const fs = require('fs');
 const path = require('path');
 const initSqlJs = require('sql.js');
 
 const DB_PATH = path.join(process.cwd(), 'data.db');
 const USE_POSTGRES = Boolean(process.env.DATABASE_URL || process.env.VERCEL_POSTGRES_URL || process.env.POSTGRES_URL);
+const pgClient = createClient();
 let sqliteDb;
 let sqliteInitPromise;
 let postgresInitPromise;
@@ -58,11 +59,11 @@ function saveSqlite() {
 async function initPostgres() {
   if (postgresInitPromise) return postgresInitPromise;
   postgresInitPromise = (async () => {
-    await sql`CREATE TABLE IF NOT EXISTS users (
+    await pgClient.sql`CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL
     )`;
-    await sql`CREATE TABLE IF NOT EXISTS documents (
+    await pgClient.sql`CREATE TABLE IF NOT EXISTS documents (
       id SERIAL PRIMARY KEY,
       title TEXT,
       content TEXT,
@@ -70,18 +71,18 @@ async function initPostgres() {
       created_at TEXT,
       updated_at TEXT
     )`;
-    await sql`CREATE TABLE IF NOT EXISTS shares (
+    await pgClient.sql`CREATE TABLE IF NOT EXISTS shares (
       id SERIAL PRIMARY KEY,
       doc_id INTEGER REFERENCES documents(id),
       user_id INTEGER REFERENCES users(id),
       permission TEXT DEFAULT 'edit',
       shared_by INTEGER REFERENCES users(id)
     )`;
-    const { rows } = await sql`SELECT COUNT(*) AS c FROM users`;
+    const { rows } = await pgClient.sql`SELECT COUNT(*) AS c FROM users`;
     if (Number(rows[0].c) === 0) {
-      await sql`INSERT INTO users (name) VALUES ('Alice')`;
-      await sql`INSERT INTO users (name) VALUES ('Bob')`;
-      await sql`INSERT INTO users (name) VALUES ('Carol')`;
+      await pgClient.sql`INSERT INTO users (name) VALUES ('Alice')`;
+      await pgClient.sql`INSERT INTO users (name) VALUES ('Bob')`;
+      await pgClient.sql`INSERT INTO users (name) VALUES ('Carol')`;
     }
   })();
   return postgresInitPromise;
@@ -119,7 +120,7 @@ function allSqlite(query, params = []) {
 async function getUsers() {
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`SELECT id, name FROM users ORDER BY id`;
+    const { rows } = await pgClient.sql`SELECT id, name FROM users ORDER BY id`;
     return rows;
   }
   await ensureDb();
@@ -129,7 +130,7 @@ async function getUsers() {
 async function getUserById(id) {
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`SELECT id, name FROM users WHERE id = ${id}`;
+    const { rows } = await pgClient.sql`SELECT id, name FROM users WHERE id = ${id}`;
     return rows[0];
   }
   await ensureDb();
@@ -139,7 +140,7 @@ async function getUserById(id) {
 async function getDocById(id) {
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`SELECT * FROM documents WHERE id = ${id}`;
+    const { rows } = await pgClient.sql`SELECT * FROM documents WHERE id = ${id}`;
     return rows[0];
   }
   await ensureDb();
@@ -149,7 +150,7 @@ async function getDocById(id) {
 async function getOwnedDocs(userId) {
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`SELECT * FROM documents WHERE owner_id = ${userId} ORDER BY updated_at DESC`;
+    const { rows } = await pgClient.sql`SELECT * FROM documents WHERE owner_id = ${userId} ORDER BY updated_at DESC`;
     return rows;
   }
   await ensureDb();
@@ -159,7 +160,7 @@ async function getOwnedDocs(userId) {
 async function getSharedDocs(userId) {
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`
+    const { rows } = await pgClient.sql`
       SELECT d.*, s.permission, s.shared_by, u.name as shared_by_name
       FROM documents d
       JOIN shares s ON s.doc_id = d.id
@@ -184,7 +185,7 @@ async function createDocument(title, content, ownerId) {
   const now = new Date().toISOString();
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`
+    const { rows } = await pgClient.sql`
       INSERT INTO documents (title, content, owner_id, created_at, updated_at)
       VALUES (${title}, ${content}, ${ownerId}, ${now}, ${now})
       RETURNING *`;
@@ -201,7 +202,7 @@ async function updateDocument(id, title, content) {
   const now = new Date().toISOString();
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`
+    const { rows } = await pgClient.sql`
       UPDATE documents SET title = ${title}, content = ${content}, updated_at = ${now}
       WHERE id = ${id}
       RETURNING *`;
@@ -216,8 +217,8 @@ async function updateDocument(id, title, content) {
 async function deleteDocument(id) {
   if (USE_POSTGRES) {
     await ensureDb();
-    await sql`DELETE FROM documents WHERE id = ${id}`;
-    await sql`DELETE FROM shares WHERE doc_id = ${id}`;
+    await pgClient.sql`DELETE FROM documents WHERE id = ${id}`;
+    await pgClient.sql`DELETE FROM shares WHERE doc_id = ${id}`;
     return;
   }
   await ensureDb();
@@ -229,7 +230,7 @@ async function deleteDocument(id) {
 async function getShare(userId, docId) {
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`SELECT permission FROM shares WHERE doc_id = ${docId} AND user_id = ${userId}`;
+    const { rows } = await pgClient.sql`SELECT permission FROM shares WHERE doc_id = ${docId} AND user_id = ${userId}`;
     return rows[0];
   }
   await ensureDb();
@@ -239,7 +240,7 @@ async function getShare(userId, docId) {
 async function getShares(docId) {
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`
+    const { rows } = await pgClient.sql`
       SELECT s.user_id, s.permission, u.name as user_name
       FROM shares s
       JOIN users u ON u.id = s.user_id
@@ -261,12 +262,12 @@ async function getShares(docId) {
 async function upsertShare(docId, userId, permission, sharedBy) {
   if (USE_POSTGRES) {
     await ensureDb();
-    const { rows } = await sql`SELECT id FROM shares WHERE doc_id = ${docId} AND user_id = ${userId}`;
+    const { rows } = await pgClient.sql`SELECT id FROM shares WHERE doc_id = ${docId} AND user_id = ${userId}`;
     if (rows.length) {
-      await sql`UPDATE shares SET permission = ${permission}, shared_by = ${sharedBy} WHERE id = ${rows[0].id}`;
+      await pgClient.sql`UPDATE shares SET permission = ${permission}, shared_by = ${sharedBy} WHERE id = ${rows[0].id}`;
       return;
     }
-    await sql`INSERT INTO shares (doc_id, user_id, permission, shared_by) VALUES (${docId}, ${userId}, ${permission}, ${sharedBy})`;
+    await pgClient.sql`INSERT INTO shares (doc_id, user_id, permission, shared_by) VALUES (${docId}, ${userId}, ${permission}, ${sharedBy})`;
     return;
   }
   await ensureDb();
@@ -282,7 +283,7 @@ async function upsertShare(docId, userId, permission, sharedBy) {
 async function removeShare(docId, userId) {
   if (USE_POSTGRES) {
     await ensureDb();
-    await sql`DELETE FROM shares WHERE doc_id = ${docId} AND user_id = ${userId}`;
+    await pgClient.sql`DELETE FROM shares WHERE doc_id = ${docId} AND user_id = ${userId}`;
     return;
   }
   await ensureDb();
