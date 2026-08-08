@@ -6,7 +6,7 @@ const initSqlJs = require('sql.js');
 const DB_PATH = path.join(process.cwd(), 'data.db');
 const POSTGRES_CONNECTION_STRING = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.VERCEL_POSTGRES_URL;
 const USE_POSTGRES = Boolean(POSTGRES_CONNECTION_STRING);
-const pgClient = createClient({ connectionString: POSTGRES_CONNECTION_STRING });
+let pgClient = null;
 let sqliteDb;
 let sqliteInitPromise;
 let postgresInitPromise;
@@ -58,8 +58,12 @@ function saveSqlite() {
 }
 
 async function initPostgres() {
+  if (!USE_POSTGRES) return initSqlite();
   if (postgresInitPromise) return postgresInitPromise;
   postgresInitPromise = (async () => {
+    if (!pgClient) {
+      pgClient = createClient({ connectionString: POSTGRES_CONNECTION_STRING });
+    }
     await pgClient.sql`CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL
